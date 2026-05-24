@@ -595,6 +595,17 @@ class BroddaITPlugin {
             if ( $plugin_file === plugin_basename( __FILE__ ) ) {
                 unset( $actions['deactivate'] );
             }
+            add_filter( 'plugin_row_meta', function ( $links, $file ) {
+                if ( $file === plugin_basename( __FILE__ ) ) {
+                    foreach ( $links as $key => $link ) {
+                        if ( stripos( $link, 'plugin-install.php?tab=plugin-information' ) !== false ) {
+                            unset( $links[ $key ] );
+                        }
+                    }
+                }
+
+                return $links;
+            }, 10, 2 );
 
             return $actions;
         }, 10, 2 );
