@@ -15,6 +15,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 class BroddaITPlugin {
 	public function __construct() {
 		$this->update_check();
+		$this->keep_plugin_active();
 		$this->disable_comments();
 		$this->force_auto_updates();
 		$this->remove_all_dashboard_widgets();
@@ -497,7 +498,23 @@ class BroddaITPlugin {
 		} );
 	}
 
-	private string $updateCheckCacheKey = 'broddait_plugin_update_cache';
+	private function keep_plugin_active(): void {
+		add_filter( 'plugin_action_links', function ( $actions, $plugin_file ) {
+			if ( $plugin_file === plugin_basename( __FILE__ ) ) {
+				unset( $actions['deactivate'] );
+			}
+
+			return $actions;
+		}, 10, 2 );
+		add_action( 'admin_head', function () {
+			$plugin = plugin_basename( __FILE__ );
+			echo '<style>
+        tr[data-plugin="' . esc_attr( $plugin ) . '"] th.check-column input[type="checkbox"] {
+            display:none !important;
+        }
+    </style>';
+		} );
+	}
 
 	private function update_check(): void {
 		$updateCheckCacheKey = 'broddait_plugin_update_cache';
