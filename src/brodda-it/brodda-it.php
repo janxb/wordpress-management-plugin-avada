@@ -27,6 +27,21 @@ class BroddaITPlugin {
 		$this->random_upload_filenames();
 	}
 
+	private function is_avada_theme_installed(): bool {
+		return $this->is_theme_installed( 'Avada' );
+	}
+
+	private function is_enfold_theme_installed(): bool {
+		return $this->is_theme_installed( 'Enfold' );
+	}
+
+	private function is_theme_installed( $name ): bool {
+		$theme        = wp_get_theme();
+		$parent_theme = $theme->parent();
+
+		return $theme->__get( 'name' ) === $name || $parent_theme && $parent_theme->__get( 'name' ) === $name;
+	}
+
 	private function disable_user_avatars(): void {
 		// Replace Gravatar with a local default avatar
 		add_filter( 'get_avatar_url', function ( $url, $id_or_email, $args ) {
