@@ -12,8 +12,6 @@ require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 
 require_once __DIR__ . '/vendor/autoload.php';
 
-use ICal\ICal;
-
 class BroddaITPlugin {
 	public function __construct() {
 		$this->update_check();
@@ -130,7 +128,7 @@ class BroddaITPlugin {
 
 			try {
 
-				$ical = new \ICal\ICal( false, array(
+				$ical = new ICal\ICal( false, array(
 					'defaultSpan'     => 2,
 					'defaultTimeZone' => 'Europe/Berlin',
 				) );
