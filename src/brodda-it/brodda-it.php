@@ -13,18 +13,6 @@ require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 require_once __DIR__ . '/vendor/autoload.php';
 
 class BroddaITPlugin {
-	public function __construct() {
-		$this->update_check();
-		$this->keep_plugin_active();
-		$this->disable_comments();
-		$this->force_auto_updates();
-		$this->remove_all_dashboard_widgets();
-		$this->disable_gutenberg_editor();
-		$this->prepare_custom_user_roles();
-		$this->create_shortcode_ics();
-		$this->disable_user_avatars();
-		$this->random_upload_filenames();
-	}
     public function __construct() {
         $this->update_check();
         $this->keep_plugin_active();
@@ -37,6 +25,25 @@ class BroddaITPlugin {
         $this->disable_user_avatars();
         $this->random_upload_filenames();
         $this->create_settings_page();
+        $this->allow_svg_uploads();
+    }
+
+    private function allow_svg_uploads(): void {
+        add_filter( 'upload_mimes', function ( $mimes ) {
+            $mimes['svg'] = 'image/svg+xml';
+
+            return $mimes;
+        } );
+
+        add_filter( 'wp_check_filetype_and_ext', function ( $data, $file, $filename, $mimes ) {
+            $filetype = wp_check_filetype( $filename, $mimes );
+
+            return [
+                    'ext'             => $filetype['ext'],
+                    'type'            => $filetype['type'],
+                    'proper_filename' => $data['proper_filename']
+            ];
+        }, 10, 4 );
     }
 
     private function is_avada_theme_installed(): bool {
