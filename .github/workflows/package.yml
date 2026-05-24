@@ -1,0 +1,45 @@
+name: Package Repository
+
+permissions: 
+  contents: write
+
+on:
+  push:
+    branches:
+      - main  # Ändere den Branch, falls nötig
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Stop if commit was made by GitHub Actions
+        run: |
+          if git log -1 --pretty=format:'%an' | grep -q "github-actions\[bot\]"; then
+            echo "Commit was made by GitHub Actions. Stopping workflow."
+            exit 0
+          fi
+
+      - name: Increase Version
+        run: |
+          VERSION=$(jq '.version' ./src/brodda-it/info.json)
+          NEWVERSION=$((VERSION+1))
+          jq '.version += 1' ./src/brodda-it/info.json > tmp.json && mv tmp.json ./src/brodda-it/info.json
+          sed -i -e "s/Version: $VERSION/Version: $NEWVERSION/g" src/brodda-it/brodda-it.php
+
+      - name: Create ZIP archive
+        run: |
+          rm brodda-it.zip || true
+          cd ./src
+          zip -r ../brodda-it.zip ./brodda-it
+
+      - name: Commit and push ZIP
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add --all
+          git commit -m "new release version $(jq '.version' ./src/brodda-it/info.json)" || exit 0
+          git push
