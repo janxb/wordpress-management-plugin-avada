@@ -2,7 +2,7 @@
 /**
  * Plugin Name: brodda.IT
  * Author: Jan Brodda / brodda.IT
- * Version: 3
+ * Version: 4
  */
 
 defined( 'ABSPATH' ) or die();
