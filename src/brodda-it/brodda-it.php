@@ -517,10 +517,9 @@ class BroddaITPlugin {
 	}
 
 	private function update_check(): void {
-		$updateCheckCacheKey = 'broddait_plugin_update_cache';
 		add_action( 'upgrader_process_complete', function ( $upgrader, $options ) {
 			if ( 'update' === $options['action'] && 'plugin' === $options['type'] ) {
-				delete_transient( $updateCheckCacheKey );
+				delete_transient( 'broddait_plugin_update_cache' );
 			}
 		}, 10, 2 );
 
@@ -529,7 +528,7 @@ class BroddaITPlugin {
 			function ( $transient ) {
 				$plugin = ( json_decode( file_get_contents( dirname( __FILE__ ) . "/info.json" ) ) );
 
-				$remote = get_transient( $updateCheckCacheKey );
+				$remote = get_transient( 'broddait_plugin_update_cache' );
 
 				if ( $remote === false ) {
 					$remote = wp_remote_get(
@@ -541,7 +540,7 @@ class BroddaITPlugin {
 							)
 						)
 					);
-					set_transient( $updateCheckCacheKey, $remote, 10 );
+					set_transient( 'broddait_plugin_update_cache', $remote, 10 );
 				}
 
 				if (
