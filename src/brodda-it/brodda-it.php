@@ -26,6 +26,28 @@ class BroddaITPlugin {
         $this->random_upload_filenames();
         $this->create_settings_page();
         $this->allow_svg_uploads();
+        $this->custom_backend_scripts();
+    }
+
+    private function custom_backend_scripts(): void {
+        add_action( 'admin_footer', function () {
+            echo <<<EOL
+	<script>
+		jQuery( document ).ready(function() {
+			const currentPage = new URLSearchParams(window.location.search).get('page');
+			const currentUrl = window.location.pathname.split('/').pop();
+	
+			if (currentUrl === 'options-media.php'){
+				jQuery('form').remove();
+				jQuery('#wpbody .wrap').append(jQuery("<p></p>").text("Die Medien-Einstellungen dieser Seite werden durch brodda.IT verwaltet."));
+			}
+	
+			// disable umami analytics tracking for logged in users
+			localStorage.setItem('umami.disabled', "1");
+		});
+	</script>
+EOL;
+        } );
     }
 
     private function allow_svg_uploads(): void {
