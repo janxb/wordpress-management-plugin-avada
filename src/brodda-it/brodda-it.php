@@ -17,6 +17,7 @@ class BroddaITPlugin {
         $this->update_check();
         $this->keep_plugin_active();
         $this->disable_comments();
+        $this->disable_blog();
         $this->force_auto_updates();
         $this->remove_all_dashboard_widgets();
         $this->disable_gutenberg_editor();
@@ -165,8 +166,8 @@ EOL;
             if ( strpos( $body, 'BEGIN:VCALENDAR' ) === false ) {
 
                 return '<pre style="white-space:pre-wrap;">'
-                       . esc_html( substr( $body, 0, 1000 ) )
-                       . '</pre>';
+                        . esc_html( substr( $body, 0, 1000 ) )
+                        . '</pre>';
             }
 
             try {
@@ -307,8 +308,8 @@ EOL;
                         $current_month = $month_headline;
 
                         echo '<h2 class="ics-month-headline">'
-                             . esc_html( $month_headline )
-                             . '</h2>';
+                                . esc_html( $month_headline )
+                                . '</h2>';
                     }
 
                     $title = ! empty( $event->summary )
@@ -347,8 +348,8 @@ EOL;
             } catch ( Exception $e ) {
 
                 return '<pre>'
-                       . esc_html( $e->getMessage() )
-                       . '</pre>';
+                        . esc_html( $e->getMessage() )
+                        . '</pre>';
             }
         } );
     }
@@ -501,6 +502,86 @@ EOL;
         }
     }
 
+    private function should_disable_blog(): bool {
+        if ( $this->is_enfold_theme_installed() ) {
+            // NOOP
+        } else {
+            return get_option( 'broddait_blog_enabled' ) == 'false';
+        }
+    }
+
+    private function disable_blog(): void {
+        if ( ! $this->should_disable_blog() ) {
+            return;
+        }
+
+        // Deaktiviere den Post Type "post" (Blog-Beiträge) und den Menüeintrag
+        add_action( 'admin_menu', function () {
+            remove_menu_page( 'edit.php' );
+        }, 999 );
+
+        // Deaktiviere den Post Type "post" nach dem init-Hook
+        add_action( 'init', function () {
+            if ( post_type_exists( 'post' ) ) {
+                unregister_post_type( 'post' );
+            }
+        }, 100 );
+
+        // Deaktiviere Kategorien- und Tag-Taxonomien
+        add_action( 'init', function () {
+            if ( taxonomy_exists( 'category' ) ) {
+                unregister_taxonomy( 'category' );
+            }
+            if ( taxonomy_exists( 'post_tag' ) ) {
+                unregister_taxonomy( 'post_tag' );
+            }
+        }, 100 );
+
+        // Deaktiviere Autorenarchive
+        add_action( 'template_redirect', function () {
+            if ( is_author() ) {
+                global $wp_query;
+                $wp_query->set_404();
+            }
+        } );
+
+        // Deaktiviere Kommentare für den Post Type "post"
+        add_filter( 'comments_open', function ( $open, $post_id ) {
+            $post = get_post( $post_id );
+            if ( $post && $post->post_type == 'post' ) {
+                return false;
+            }
+
+            return $open;
+        }, 10, 2 );
+
+        // Deaktiviere RSS-Feeds für Beiträge
+        add_action( 'do_feed', function ( $feed, $feed_name ) {
+            if ( get_post_type() === 'post' || in_array( $feed_name, [ 'feed', 'rdf', 'rss', 'rss2', 'atom' ] ) ) {
+                wp_die( __( 'Feed deaktiviert.' ) );
+            }
+        }, 1, 2 );
+
+        // Optional: Deaktiviere REST API-Endpoints für Beiträge, Kategorien und Tags
+        add_filter( 'rest_endpoints', function ( $endpoints ) {
+            $to_remove = [
+                    '/wp/v2/posts',
+                    '/wp/v2/posts/(?P<id>[\d]+)',
+                    '/wp/v2/categories',
+                    '/wp/v2/categories/(?P<id>[\d]+)',
+                    '/wp/v2/tags',
+                    '/wp/v2/tags/(?P<id>[\d]+)'
+            ];
+            foreach ( $to_remove as $endpoint ) {
+                if ( isset( $endpoints[ $endpoint ] ) ) {
+                    unset( $endpoints[ $endpoint ] );
+                }
+            }
+
+            return $endpoints;
+        } );
+    }
+
     private function disable_comments(): void {
         if ( ! $this->should_disable_comments() ) {
             return;
@@ -572,6 +653,15 @@ EOL;
                 update_option( 'broddait_comments_enabled', 'false' );
             }
 
+            register_setting( $option_group, 'broddait_blog_enabled',
+                    function ( $value ) {
+                        return 'on' == $value ? 'true' : 'false';
+                    }
+            );
+            if ( ! get_option( 'broddait_blog_enabled' ) ) {
+                update_option( 'broddait_blog_enabled', 'false' );
+            }
+
             if ( ! $this->is_enfold_theme_installed() ) {
                 add_settings_field(
                         'broddait_comments_enabled',
@@ -580,6 +670,18 @@ EOL;
                             <label>
                                 <input type="checkbox"
                                        name="broddait_comments_enabled" <?php checked( get_option( 'broddait_comments_enabled' ), 'true' ) ?> />
+                            </label>
+                        <?php },
+                        $page_slug,
+                        'broddait_settings' // section ID
+                );
+                add_settings_field(
+                        'broddait_blog_enabled',
+                        'Blog aktiviert',
+                        function ( $args ) { ?>
+                            <label>
+                                <input type="checkbox"
+                                       name="broddait_blog_enabled" <?php checked( get_option( 'broddait_blog_enabled' ), 'true' ) ?> />
                             </label>
                         <?php },
                         $page_slug,
