@@ -183,7 +183,7 @@ EOL;
             require_once __DIR__ . '/vendor/autoload.php';
 
             // Cache key
-            $cache_key = 'ics_cache_' . md5($atts['url']);
+            $cache_key = 'broddait_ics_cache_' . md5($atts['url']);
 
             // Try cache
             $body = get_transient($cache_key);
