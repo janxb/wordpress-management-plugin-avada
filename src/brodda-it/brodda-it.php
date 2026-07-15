@@ -31,6 +31,15 @@ class BroddaITPlugin
         $this->allow_svg_uploads();
         $this->custom_backend_scripts();
         $this->init_old_posts_cleanup();
+        $this->remove_ai_connectors();
+    }
+
+    public function remove_ai_connectors(): void
+    {
+        add_filter('wp_supports_ai', '__return_false');
+        add_action('admin_init', function () {
+            remove_submenu_page('options-general.php', 'options-connectors.php');
+        });
     }
 
     public function init_old_posts_cleanup(): void
