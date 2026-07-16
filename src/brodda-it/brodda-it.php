@@ -417,7 +417,7 @@ EOL;
             return;
         }
 
-        add_role('customer_admin', 'Customer Admin', [
+        add_role('customer_admin', 'Kunden-Administrator', [
 
             // Login / dashboard
                 'read' => true,
@@ -425,16 +425,20 @@ EOL;
             // Posts
                 'edit_posts' => true,
                 'edit_others_posts' => true,
+                'edit_published_posts' => true,
                 'publish_posts' => true,
                 'delete_posts' => true,
                 'delete_others_posts' => true,
+                'delete_published_posts' => true,
 
             // Pages
                 'edit_pages' => true,
                 'edit_others_pages' => true,
+                'edit_published_pages' => true,
                 'publish_pages' => true,
                 'delete_pages' => true,
                 'delete_others_pages' => true,
+                'delete_published_pages' => true,
 
             // Media
                 'upload_files' => true,
@@ -480,9 +484,6 @@ EOL;
             // Customizer
                 'customize' => false,
 
-            // Full site editing
-                'edit_theme_options' => false,
-
         ]);
         add_filter('map_meta_cap', function ($caps, $cap, $user_id, $args) {
             $current_user = wp_get_current_user();
@@ -524,7 +525,7 @@ EOL;
                 $wp_roles = new WP_Roles();
             }
             foreach ($wp_roles->roles as $role => $details) {
-                if ($role === 'administrator') {
+                if (in_array($role, ['administrator', 'customer_admin'])) {
                     continue;
                 }
                 remove_role($role);
