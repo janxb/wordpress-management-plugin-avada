@@ -569,7 +569,7 @@ EOL;
     private function should_disable_blog(): bool
     {
         if ($this->is_enfold_theme_installed()) {
-            // NOOP
+            return false;
         } else {
             return get_option('broddait_blog_enabled') == 'false';
         }
