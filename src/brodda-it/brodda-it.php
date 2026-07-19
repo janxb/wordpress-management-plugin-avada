@@ -233,7 +233,7 @@ EOL;
         // Replace Gravatar with a local default avatar
         add_filter('get_avatar_url', function ($url, $id_or_email, $args) {
             // Return a local default avatar image
-            return plugin_dir_url(__FILE__) . '/default-avatar.png';
+            return plugin_dir_url(__FILE__) . 'default-avatar.png';
         }, 10, 3);
 
 // Prevent DNS prefetch to gravatar.com
