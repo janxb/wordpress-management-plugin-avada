@@ -13,6 +13,7 @@ require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/audit-log.php';
 require_once __DIR__ . '/brute-force-protection.php';
+require_once __DIR__ . '/custom-user-roles.php';
 
 class BroddaITPlugin
 {
@@ -25,7 +26,6 @@ class BroddaITPlugin
         $this->force_auto_updates();
         $this->remove_all_dashboard_widgets();
         $this->disable_gutenberg_editor();
-        $this->prepare_custom_user_roles();
         $this->create_shortcode_ics();
         $this->disable_user_avatars();
         $this->random_upload_filenames();
@@ -499,130 +499,6 @@ EOL;
                         . '</pre>';
             }
         });
-    }
-
-    private function create_customer_admin_role(): void
-    {
-        // Create role only once
-        if (get_role('customer_admin')) {
-            return;
-        }
-
-        add_role('customer_admin', 'Kunden-Administrator', [
-
-            // Login / dashboard
-                'read' => true,
-
-            // Posts
-                'edit_posts' => true,
-                'edit_others_posts' => true,
-                'edit_published_posts' => true,
-                'publish_posts' => true,
-                'delete_posts' => true,
-                'delete_others_posts' => true,
-                'delete_published_posts' => true,
-
-            // Pages
-                'edit_pages' => true,
-                'edit_others_pages' => true,
-                'edit_published_pages' => true,
-                'publish_pages' => true,
-                'delete_pages' => true,
-                'delete_others_pages' => true,
-                'delete_published_pages' => true,
-
-            // Media
-                'upload_files' => true,
-
-            // Categories / tags
-                'manage_categories' => true,
-
-            // Comments
-                'moderate_comments' => true,
-                'edit_comment' => true,
-
-            // Themes appearance basics
-                'edit_theme_options' => false,
-
-            // Plugins/themes/core
-                'activate_plugins' => false,
-                'install_plugins' => false,
-                'update_plugins' => false,
-                'delete_plugins' => false,
-
-                'install_themes' => false,
-                'switch_themes' => false,
-                'update_themes' => false,
-                'delete_themes' => false,
-
-                'update_core' => false,
-
-            // Users
-                'list_users' => true,
-                'create_users' => true,
-                'edit_users' => true,
-                'delete_users' => true,
-                'promote_users' => true,
-
-            // Settings/tools
-                'manage_options' => false,
-                'import' => false,
-                'export' => false,
-                'view_site_health_checks' => false,
-                'export_others_personal_data' => false,
-                'erase_others_personal_data' => false,
-
-            // Customizer
-                'customize' => false,
-
-        ]);
-        add_filter('map_meta_cap', function ($caps, $cap, $user_id, $args) {
-            $current_user = wp_get_current_user();
-            // Only affect customer_admin
-            if (in_array('administrator', (array)$current_user->roles, true)) {
-                return $caps;
-            }
-            // Target user ID
-            $target_user_id = $args[0] ?? 0;
-            if (!$target_user_id) {
-                return $caps;
-            }
-            $target_user = get_userdata($target_user_id);
-            if (!$target_user) {
-                return $caps;
-            }
-            // Protect administrators
-            if (in_array('administrator', (array)$target_user->roles, true)) {
-                // Block editing / deleting / promoting admins
-                if (in_array($cap, [
-                        'edit_user',
-                        'remove_user',
-                        'delete_user',
-                        'promote_user',
-                ], true)) {
-                    return ['do_not_allow'];
-                }
-            }
-
-            return $caps;
-        }, 10, 4);
-    }
-
-    private function prepare_custom_user_roles(): void
-    {
-        add_action('init', function () {
-            global $wp_roles;
-            if (!isset($wp_roles)) {
-                $wp_roles = new WP_Roles();
-            }
-            foreach ($wp_roles->roles as $role => $details) {
-                if (in_array($role, ['administrator', 'customer_admin'])) {
-                    continue;
-                }
-                remove_role($role);
-            }
-            $this->create_customer_admin_role();
-        }, 999);
     }
 
     private function disable_gutenberg_editor(): void
