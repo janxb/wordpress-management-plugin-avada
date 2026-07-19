@@ -36,6 +36,42 @@ class BroddaITPlugin
         $this->disable_rest_api();
         $this->disable_xmlrpc_api();
         $this->disable_user_enumeration();
+        $this->hide_login_errors();
+    }
+
+    public function hide_login_errors(): void
+    {
+        add_filter('wp_login_errors', function (WP_Error $errors): WP_Error {
+            $login_action = isset($_REQUEST['action'])
+                    ? sanitize_key((string)wp_unslash($_REQUEST['action']))
+                    : 'login';
+
+            if ($login_action !== 'login') {
+                return $errors;
+            }
+
+            $credential_error_codes = [
+                    'invalid_username',
+                    'invalid_email',
+                    'incorrect_password',
+                    'authentication_failed',
+            ];
+
+            if (!array_intersect($credential_error_codes, $errors->get_error_codes())) {
+                return $errors;
+            }
+
+            foreach ($credential_error_codes as $error_code) {
+                $errors->remove($error_code);
+            }
+
+            $errors->add(
+                    'incorrect_password',
+                    '<strong>Error:</strong> The password you entered is incorrect.'
+            );
+
+            return $errors;
+        });
     }
 
     public function disable_user_enumeration(): void
