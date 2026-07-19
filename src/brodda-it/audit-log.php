@@ -4,11 +4,11 @@ defined('ABSPATH') or die();
 
 final class BroddaITAuditLog
 {
-    private const DB_VERSION = '1';
-    private const DB_VERSION_OPTION = 'broddait_audit_log_db_version';
-    private const PER_PAGE = 50;
-    private const RETENTION_DAYS = 365;
-    private const CLEANUP_HOOK = 'broddait_audit_log_cleanup';
+    private const string DB_VERSION = '1';
+    private const string DB_VERSION_OPTION = 'broddait_audit_log_db_version';
+    private const int PER_PAGE = 50;
+    private const int RETENTION_DAYS = 365;
+    private const string CLEANUP_HOOK = 'broddait_audit_log_cleanup';
 
     public static function init(): void
     {

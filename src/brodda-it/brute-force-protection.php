@@ -4,10 +4,10 @@ defined('ABSPATH') or die();
 
 final class BroddaITBruteForceProtection
 {
-    private const MAX_ATTEMPTS = 5;
-    private const ATTEMPT_WINDOW = 30 * MINUTE_IN_SECONDS;
-    private const LOCKOUT_DURATION = 30 * MINUTE_IN_SECONDS;
-    private const TRANSIENT_PREFIX = 'broddait_login_attempts_';
+    private const int MAX_ATTEMPTS = 5;
+    private const int ATTEMPT_WINDOW = 30 * MINUTE_IN_SECONDS;
+    private const int LOCKOUT_DURATION = 30 * MINUTE_IN_SECONDS;
+    private const string TRANSIENT_PREFIX = 'broddait_login_attempts_';
 
     public static function init(): void
     {
