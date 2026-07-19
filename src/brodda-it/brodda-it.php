@@ -12,6 +12,7 @@ require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 
 require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/audit-log.php';
+require_once __DIR__ . '/brute-force-protection.php';
 
 class BroddaITPlugin
 {
