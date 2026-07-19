@@ -33,6 +33,59 @@ class BroddaITPlugin
         $this->custom_backend_scripts();
         $this->init_old_posts_cleanup();
         $this->remove_ai_connectors();
+        $this->disable_rest_api();
+        $this->disable_xmlrpc_api();
+        $this->disable_user_enumeration();
+    }
+
+    public function disable_user_enumeration(): void
+    {
+        add_action('init', function () {
+            if (is_admin()) {
+                return;
+            }
+
+            if (isset($_REQUEST['author'])) {
+                wp_safe_redirect(get_home_url(), 301);
+                exit;
+            }
+        });
+        add_action('template_redirect', function () {
+            if (is_author()) {
+                wp_safe_redirect(get_home_url(), 301);
+                exit;
+            }
+        });
+    }
+
+    public function disable_xmlrpc_api(): void
+    {
+        add_filter('xmlrpc_methods', function () {
+            return [];
+        }, PHP_INT_MAX);
+        add_filter('wp_headers', function ($headers) {
+            unset($headers['X-Pingback']);
+
+            return $headers;
+        });
+    }
+
+    public function disable_rest_api(): void
+    {
+        add_filter('rest_authentication_errors', function ($result) {
+            if (true === $result || is_wp_error($result)) {
+                return $result;
+            }
+            if (!is_user_logged_in()) {
+                return new WP_Error(
+                        'rest_not_logged_in',
+                        __('You are not currently logged in.'),
+                        array('status' => 401)
+                );
+            }
+
+            return $result;
+        });
     }
 
     public function remove_ai_connectors(): void
