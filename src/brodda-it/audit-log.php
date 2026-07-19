@@ -273,6 +273,16 @@ final class BroddaITAuditLog
         $type = $options['type'] ?? '';
         $action = $options['action'] ?? '';
 
+        if ($type === 'core' && $action === 'update') {
+            $version = self::installed_wordpress_version();
+            $description = $version !== ''
+                    ? sprintf('WordPress core updated to version %s.', $version)
+                    : 'WordPress core was updated.';
+
+            self::write('core_updated', 'core', 0, $description);
+            return;
+        }
+
         if ($type === 'theme' && $action === 'update') {
             $themes = $options['themes'] ?? [];
             if (!$themes && !empty($options['theme'])) {
@@ -712,6 +722,14 @@ final class BroddaITAuditLog
         return dirname($plugin_file) === '.'
                 ? basename($plugin_file, '.php')
                 : dirname($plugin_file);
+    }
+
+    private static function installed_wordpress_version(): string
+    {
+        $wp_version = '';
+        require ABSPATH . WPINC . '/version.php';
+
+        return is_string($wp_version) ? $wp_version : '';
     }
 
     private static function table_name(): string
