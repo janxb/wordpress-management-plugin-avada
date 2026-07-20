@@ -398,6 +398,41 @@ final class BroddaITAuditLog
                 ? sanitize_key((string)wp_unslash($_GET['audit_event']))
                 : '';
 
+        if ($selected_user !== '' && $selected_event !== '') {
+            $combination_exists = (bool)$wpdb->get_var(
+                    $wpdb->prepare(
+                            "SELECT 1 FROM {$table_name} WHERE user_id = %d AND event_type = %s LIMIT 1",
+                            (int)$selected_user,
+                            $selected_event
+                    )
+            );
+
+            if (!$combination_exists) {
+                $selected_event = '';
+            }
+        }
+
+        $users = $selected_event !== ''
+                ? $wpdb->get_results(
+                        $wpdb->prepare(
+                                "SELECT user_id, MAX(username) AS username FROM {$table_name} WHERE event_type = %s GROUP BY user_id ORDER BY username ASC",
+                                $selected_event
+                        )
+                )
+                : $wpdb->get_results(
+                        "SELECT user_id, MAX(username) AS username FROM {$table_name} GROUP BY user_id ORDER BY username ASC"
+                );
+        $event_types = $selected_user !== ''
+                ? $wpdb->get_col(
+                        $wpdb->prepare(
+                                "SELECT DISTINCT event_type FROM {$table_name} WHERE user_id = %d ORDER BY event_type ASC",
+                                (int)$selected_user
+                        )
+                )
+                : $wpdb->get_col(
+                        "SELECT DISTINCT event_type FROM {$table_name} ORDER BY event_type ASC"
+                );
+
         $where = [];
         $query_parameters = [];
         if ($selected_user !== '') {
@@ -419,13 +454,6 @@ final class BroddaITAuditLog
         $event_parameters = array_merge($query_parameters, [self::PER_PAGE, $offset]);
         $events = $wpdb->get_results(
                 $wpdb->prepare($event_sql, ...$event_parameters)
-        );
-
-        $users = $wpdb->get_results(
-                "SELECT user_id, MAX(username) AS username FROM {$table_name} GROUP BY user_id ORDER BY username ASC"
-        );
-        $event_types = $wpdb->get_col(
-                "SELECT DISTINCT event_type FROM {$table_name} ORDER BY event_type ASC"
         );
 
         $event_groups = self::group_consecutive_events($events);
