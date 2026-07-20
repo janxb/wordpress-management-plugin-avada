@@ -316,7 +316,7 @@ final class BroddaITAuditLog
         }
 
         $plugin_names = array_map(static function ($plugin): string {
-            return dirname((string)$plugin) === '.' ? basename((string)$plugin, '.php') : dirname((string)$plugin);
+            return self::plugin_event_label((string)$plugin);
         }, (array)$plugins);
 
         $description = $plugin_names
@@ -722,6 +722,23 @@ final class BroddaITAuditLog
         return dirname($plugin_file) === '.'
                 ? basename($plugin_file, '.php')
                 : dirname($plugin_file);
+    }
+
+    private static function plugin_event_label(string $plugin_file): string
+    {
+        $fallback_name = self::plugin_name_from_file($plugin_file);
+        $plugin_path = WP_PLUGIN_DIR . '/' . ltrim($plugin_file, '/\\');
+        if (!is_file($plugin_path)) {
+            return $fallback_name;
+        }
+
+        $plugin_data = get_plugin_data($plugin_path, false, false);
+        $plugin_name = !empty($plugin_data['Name']) ? $plugin_data['Name'] : $fallback_name;
+        $version = !empty($plugin_data['Version']) ? $plugin_data['Version'] : '';
+
+        return $version !== ''
+                ? sprintf('%s (version %s)', $plugin_name, $version)
+                : $plugin_name;
     }
 
     private static function installed_wordpress_version(): string
