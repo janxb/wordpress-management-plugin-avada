@@ -279,9 +279,10 @@ class WP_Object_Cache
             $this->delete_normalized($key, $group);
             return $this->miss();
         }
-        $value = $this->decode((string)$row['cache_value'], $decoded);
-        if (!$decoded) {
-            $this->reset_database();
+        $serialized = (string)$row['cache_value'];
+        $value = @unserialize($serialized, ['allowed_classes' => true]);
+        if ($value === false && $serialized !== serialize(false)) {
+            $this->delete_normalized($key, $group);
             return $this->miss();
         }
 
@@ -423,7 +424,7 @@ class WP_Object_Cache
         $statement->bindValue(':group', $group, SQLITE3_TEXT);
         $statement->bindValue(':expires', $expires_at, SQLITE3_INTEGER);
         $statement->bindValue(':created', time(), SQLITE3_INTEGER);
-        $statement->bindValue(':value', $this->encode($data), SQLITE3_BLOB);
+        $statement->bindValue(':value', serialize($data), SQLITE3_BLOB);
     }
 
     private function delete_expired_key(string $key, string $group): void
@@ -464,54 +465,6 @@ class WP_Object_Cache
             return null;
         }
         return $record;
-    }
-
-    private function encode($value): string
-    {
-        return function_exists('igbinary_serialize')
-                ? igbinary_serialize($value)
-                : serialize($value);
-    }
-
-    private function decode(string $serialized, ?bool &$success)
-    {
-        $warning = false;
-        set_error_handler(static function () use (&$warning): bool {
-            $warning = true;
-            return true;
-        });
-
-        try {
-            if (function_exists('igbinary_unserialize')) {
-                $value = igbinary_unserialize($serialized);
-                $false_value = igbinary_serialize(false);
-                $null_value = igbinary_serialize(null);
-            } else {
-                $value = unserialize($serialized, ['allowed_classes' => true]);
-                $false_value = serialize(false);
-                $null_value = serialize(null);
-            }
-        } catch (Throwable $exception) {
-            $warning = true;
-            $value = null;
-            $false_value = '';
-            $null_value = '';
-        } finally {
-            restore_error_handler();
-        }
-
-        $success = !$warning
-                && ($value !== false || $serialized === $false_value)
-                && ($value !== null || $serialized === $null_value);
-        return $value;
-    }
-
-    private function reset_database(): void
-    {
-        $this->cache = [];
-        if ($this->database instanceof SQLite3) {
-            @$this->database->exec('DELETE FROM cache_entries');
-        }
     }
 
     private function normalize($key, $group): array
