@@ -25,6 +25,7 @@ class BroddaITPlugin
         $this->disable_comments();
         $this->disable_blog();
         $this->force_auto_updates();
+        $this->disable_auto_update_notification_emails();
         $this->remove_all_dashboard_widgets();
         $this->disable_gutenberg_editor();
         $this->disable_user_avatars();
@@ -287,6 +288,13 @@ EOL;
         add_filter('auto_update_theme', '__return_true');
         add_filter('auto_update_core', '__return_true');
         add_filter('allow_major_auto_core_updates', '__return_true');
+    }
+
+    private function disable_auto_update_notification_emails(): void
+    {
+        add_filter('auto_plugin_update_send_email', '__return_false');
+        add_filter('auto_theme_update_send_email', '__return_false');
+        add_filter('auto_core_update_send_email', '__return_false');
     }
 
     private function should_disable_comments(): bool
