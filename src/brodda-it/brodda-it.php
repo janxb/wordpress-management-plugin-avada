@@ -15,6 +15,7 @@ require_once __DIR__ . '/audit-log.php';
 require_once __DIR__ . '/brute-force-protection.php';
 require_once __DIR__ . '/custom-user-roles.php';
 require_once __DIR__ . '/ics-shortcode.php';
+require_once __DIR__ . '/object-cache-manager.php';
 
 class BroddaITPlugin
 {
