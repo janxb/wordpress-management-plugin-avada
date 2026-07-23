@@ -86,7 +86,7 @@ function wp_cache_flush_group($group): bool
 
 function wp_cache_close(): bool
 {
-    return true;
+    return $GLOBALS['wp_object_cache']->close();
 }
 
 function wp_cache_add_global_groups($groups): void
@@ -390,6 +390,18 @@ class WP_Object_Cache
     public function reset(): void
     {
         $this->cache = [];
+    }
+
+    public function close(): bool
+    {
+        $this->cache = [];
+        if (!$this->database instanceof SQLite3) {
+            return true;
+        }
+
+        $closed = @$this->database->close();
+        $this->database = null;
+        return $closed;
     }
 
     private function open_database(): void

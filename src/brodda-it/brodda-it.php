@@ -526,11 +526,61 @@ EOL;
                         ?>
                         <div class="wrap">
                             <h1><?php echo get_admin_page_title() ?></h1>
+                            <?php
+                            $cache_notice = get_user_meta(
+                                    get_current_user_id(),
+                                    'broddait_object_cache_notice',
+                                    true
+                            );
+                            if (in_array($cache_notice, ['success', 'error'], true)) {
+                                delete_user_meta(
+                                        get_current_user_id(),
+                                        'broddait_object_cache_notice'
+                                );
+                                $cache_cleared = $cache_notice === 'success';
+                                ?>
+                                <div class="notice <?php echo $cache_cleared ? 'notice-success' : 'notice-error' ?> is-dismissible">
+                                    <p>
+                                        <?php echo $cache_cleared
+                                                ? esc_html__('The object cache was cleared.', 'brodda-it')
+                                                : esc_html__('The object cache could not be cleared completely.', 'brodda-it') ?>
+                                    </p>
+                                </div>
+                                <?php
+                            }
+                            ?>
                             <form method="post" action="options.php">
                                 <?php
                                 settings_fields('broddait_settings');
                                 do_settings_sections('broddait_settings');
                                 submit_button();
+                                ?>
+                            </form>
+                            <hr/>
+                            <h2><?php esc_html_e('Object cache', 'brodda-it') ?></h2>
+                            <?php $cache_statistics = BroddaITObjectCacheManager::get_statistics(); ?>
+                            <p>
+                                <?php
+                                printf(
+                                        esc_html__('Current size: %1$s | Cached elements: %2$s', 'brodda-it'),
+                                        esc_html(size_format($cache_statistics['size'])),
+                                        $cache_statistics['entries'] === null
+                                                ? esc_html__('Unavailable', 'brodda-it')
+                                                : esc_html(number_format_i18n($cache_statistics['entries']))
+                                );
+                                ?>
+                            </p>
+                            <p><?php esc_html_e('Delete the SQLite object cache database. It will be recreated automatically when needed.', 'brodda-it') ?></p>
+                            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')) ?>">
+                                <input type="hidden" name="action" value="broddait_clear_object_cache"/>
+                                <?php
+                                wp_nonce_field('broddait_clear_object_cache');
+                                submit_button(
+                                        __('Clear object cache', 'brodda-it'),
+                                        'secondary',
+                                        'submit',
+                                        false
+                                );
                                 ?>
                             </form>
                         </div>

@@ -24,6 +24,7 @@ final class BroddaITObjectCacheManager
         add_action(self::VERIFY_HOOK, [self::class, 'install_drop_in']);
         add_action(self::CLEANUP_HOOK, [self::class, 'cleanup']);
         add_action(self::VACUUM_HOOK, [self::class, 'vacuum']);
+        add_action('admin_post_broddait_clear_object_cache', [self::class, 'handle_clear_cache']);
         add_action('clean_post_cache', [self::class, 'flush_avada_query_cache'], 10, 0);
         add_action('clean_term_cache', [self::class, 'flush_avada_query_cache'], 10, 0);
 
@@ -120,6 +121,76 @@ final class BroddaITObjectCacheManager
     public static function flush_avada_query_cache(): void
     {
         wp_cache_flush_group('fusion_library');
+    }
+
+    /**
+     * @return array{size: int, entries: int|null}
+     */
+    public static function get_statistics(): array
+    {
+        $database_path = WP_CONTENT_DIR . '/.ht.broddait-cache.sqlite';
+        $size = 0;
+        clearstatcache(true, $database_path);
+        foreach ([$database_path, $database_path . '-wal', $database_path . '-shm'] as $path) {
+            if (is_file($path)) {
+                $file_size = filesize($path);
+                if ($file_size !== false) {
+                    $size += $file_size;
+                }
+            }
+        }
+
+        $entries = null;
+        $database = self::open_database();
+        if ($database instanceof SQLite3) {
+            $count = @$database->querySingle('SELECT COUNT(*) FROM cache_entries');
+            if (is_int($count) || is_float($count) || is_numeric($count)) {
+                $entries = (int)$count;
+            }
+            @$database->close();
+        }
+
+        return [
+                'size' => $size,
+                'entries' => $entries,
+        ];
+    }
+
+    public static function handle_clear_cache(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(
+                    esc_html__('You are not allowed to clear the object cache.', 'brodda-it'),
+                    '',
+                    ['response' => 403]
+            );
+        }
+
+        check_admin_referer('broddait_clear_object_cache');
+
+        if (function_exists('wp_cache_close')) {
+            wp_cache_close();
+        }
+
+        $database_path = WP_CONTENT_DIR . '/.ht.broddait-cache.sqlite';
+        $deleted = true;
+        foreach ([$database_path, $database_path . '-wal', $database_path . '-shm'] as $path) {
+            if (is_file($path)) {
+                wp_delete_file($path);
+                if (is_file($path)) {
+                    $deleted = false;
+                }
+            }
+        }
+
+        update_user_meta(
+                get_current_user_id(),
+                'broddait_object_cache_notice',
+                $deleted ? 'success' : 'error'
+        );
+
+        wp_safe_redirect(admin_url('options-general.php?page=broddait_settings'));
+        exit;
     }
 
     public static function vacuum(): void
