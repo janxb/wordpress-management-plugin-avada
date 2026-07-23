@@ -4,7 +4,7 @@ defined('ABSPATH') or die();
 
 final class BroddaITCustomUserRoles
 {
-    private const string VERSION = '1';
+    private const string VERSION = '2';
     private const string VERSION_OPTION = 'broddait_custom_user_roles_version';
 
     public static function init(): void
@@ -106,6 +106,74 @@ final class BroddaITCustomUserRoles
                                 'customize' => false,
                         ],
                 ],
+                'editor' => [
+                        'display_name' => 'Bearbeiter',
+                        'capabilities' => [
+
+                            // Login / dashboard
+                                'read' => true,
+
+                            // Posts
+                                'edit_posts' => true,
+                                'edit_others_posts' => true,
+                                'edit_private_posts' => true,
+                                'edit_published_posts' => true,
+                                'publish_posts' => true,
+                                'read_private_posts' => true,
+                                'delete_posts' => true,
+                                'delete_others_posts' => true,
+                                'delete_published_posts' => true,
+                                'delete_private_posts' => true,
+
+                            // Pages
+                                'edit_pages' => true,
+                                'edit_others_pages' => true,
+                                'edit_private_pages' => true,
+                                'edit_published_pages' => true,
+                                'publish_pages' => true,
+                                'read_private_pages' => true,
+                                'delete_pages' => true,
+                                'delete_others_pages' => true,
+                                'delete_published_pages' => true,
+                                'delete_private_pages' => true,
+
+                            // Media
+                                'upload_files' => true,
+
+                            // Categories / tags
+                                'manage_categories' => true,
+
+                            // Comments
+                                'moderate_comments' => true,
+                                'edit_comment' => true,
+
+                            // Users
+                                'list_users' => false,
+                                'create_users' => false,
+                                'edit_users' => false,
+                                'delete_users' => false,
+                                'promote_users' => false,
+
+                            // Settings, plugins, themes and updates
+                                'manage_options' => false,
+                                'edit_theme_options' => false,
+                                'customize' => false,
+                                'activate_plugins' => false,
+                                'install_plugins' => false,
+                                'update_plugins' => false,
+                                'delete_plugins' => false,
+                                'install_themes' => false,
+                                'switch_themes' => false,
+                                'update_themes' => false,
+                                'delete_themes' => false,
+                                'update_core' => false,
+                                'import' => false,
+                                'export' => false,
+                                'view_site_health_checks' => false,
+                                'export_others_personal_data' => false,
+                                'erase_others_personal_data' => false,
+                        ],
+                ],
         ];
     }
 
@@ -132,6 +200,18 @@ final class BroddaITCustomUserRoles
     {
         $custom_role_names = self::role_definitions()
                 |> array_keys(...);
+
+        add_filter('editable_roles', static function (array $roles): array {
+            $acting_user = wp_get_current_user();
+            if (
+                    !in_array('administrator', (array)$acting_user->roles, true)
+                    && !(is_multisite() && is_super_admin($acting_user->ID))
+            ) {
+                unset($roles['administrator']);
+            }
+
+            return $roles;
+        });
 
         add_filter('map_meta_cap', static function ($caps, $cap, $user_id, $args) use ($custom_role_names) {
             $acting_user = get_userdata($user_id);
